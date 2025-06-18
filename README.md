@@ -1,7 +1,5 @@
 # OV7670 Camera on PYNQ-Z2 → HDMI Demo
 
-![Project Flow](docs/flow_overview.png)
-
 ## Table of Contents
 
 1. [Project Overview](#project-overview)  
@@ -68,7 +66,7 @@ This project demonstrates a complete FPGA-and-software flow for:
 
 ---
 
-## Clocking & Reset
+## 5) Clocking & Reset
 
 | Clock Source         | Used For               | Frequency  |
 |----------------------|------------------------|-----------:|
@@ -81,7 +79,7 @@ This project demonstrates a complete FPGA-and-software flow for:
 
 ---
 
-## HLS IP: `dvp2axis`
+## 6) HLS IP: `dvp2axis`
 
 - **Source**: `hls/dvp2axis.cpp`, `dvp2axis.h`  
 - **Function**:  
@@ -95,11 +93,79 @@ This project demonstrates a complete FPGA-and-software flow for:
 
 ---
 
-## PS-EMIO I²C (SCCB) Setup
+## 7) PS-EMIO I²C (SCCB) Setup
 
 1. In the Zynq PS block, **enable EMIO** for **I2C0**.  
 2. Add two **Utility Buffer** IPs, set **C Buf Type = IOBUF**.  
 3. Wire PS EMIO pins:
 
+--- 
 
 
+## 8) AXI-Stream → Video-Out Pipeline
+
+1. **Data-Width Converter**  
+   - Use `axis_dwidth_converter_0` to ensure each transfer is 16 bits (2 bytes/pixel for RGB565).  
+   - Set **TDATA_NUM_BYTES = 2**.
+
+2. **Clock Domain Converter**  
+   - Insert `axis_clock_converter_0` to move the AXI-Stream from the camera’s PCLK domain into the 25 MHz pixel-clock domain.  
+
+3. **Video Timing Controller** (`v_tc_0`)  
+   - Configure in generator mode for **640×480 @ 60 Hz**.  
+   - Connect:  
+     ```text
+     clk_in     ← clk_wiz_0_clk_out2 (25 MHz)
+     reset      ← proc_sys_reset_0/peripheral_aresetn (synchronous to 25 MHz)
+     ```
+   - Expose outputs: `hsync_out`, `vsync_out`, `active_video_out`, `fid_out`.
+
+4. **AXI-4-Stream to Video Out** (`v_axi4s_vid_out_0`)  
+   - In the IP configuration, select “Timing Controller” and point to `v_tc_0`.  
+   - Clock & reset:  
+     ```text
+     clk       ← clk_wiz_0_clk_out2
+     reset     ← proc_sys_reset_0/peripheral_aresetn
+     ```
+   - AXI-Stream interface:  
+     ```text
+     S_AXIS_VIDEO_TDATA   ← from axis_clock_converter_0/TDATA[15:0]
+     S_AXIS_VIDEO_TVALID  ← upstream TVALID
+     S_AXIS_VIDEO_TREADY  → upstream TREADY
+     S_AXIS_VIDEO_TUSER   ← start-of-frame indicator
+     S_AXIS_VIDEO_TLAST   ← end-of-line indicator
+     ```
+   - Video signals:  
+     ```text
+     vid_hsync       ← v_tc_0/hsync_out
+     vid_vsync       ← v_tc_0/vsync_out
+     vid_active_video← v_tc_0/active_video_out
+     fid_in          ← v_tc_0/fid_out
+     ```
+   - TMDS outputs (`TMDS_Clk_p/n`, `TMDS_Data_p/n[2:0]`) are auto-generated and must be connected to the top-level ports.
+
+---
+
+## 9) AXI-VDMA Configuration
+
+- **Instance**: `axi_vdma_0`  
+- **Read (“S2MM”) Channel**  
+  - Used by Python to snapshot a single frame from DDR.  
+  - Configure buffer size = **width × height × stride** (e.g. 640×480×2 = 614 400 bytes).  
+  - API in Python:
+    ```python
+    rc = ol.axi_vdma_0.readchannel
+    rc.stop()
+    rc.start(frame_bytes)
+    buf = rc.readframe()
+    rc.stop()
+    ```
+- **Write (“MM2S”) Channel**  
+  - Drives the HDMI-Out front-end for continuous live display (optional).  
+  - Configure same frame size and loop mode if you want live streaming.  
+- **Frame Dimensions**  
+  ```text
+  width   = 640
+  height  = 480
+  stride  = 2 bytes/pixel (RGB565)
+  frame_bytes = width × height × stride
