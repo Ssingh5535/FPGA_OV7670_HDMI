@@ -169,3 +169,38 @@ This project demonstrates a complete FPGA-and-software flow for:
   height  = 480
   stride  = 2 bytes/pixel (RGB565)
   frame_bytes = width × height × stride
+
+---
+
+## 10) Top-Level Wrapper & XDC Constraints
+
+- **Wrapper Updates**  
+  Extended the auto-generated `design_1_wrapper.v` to add only the two bidirectional SCCB ports (`iic_rtl_0_scl_io` and `iic_rtl_0_sda_io`), leaving all existing PS, DDR and HDMI pins intact.
+
+- **XDC Adjustments**  
+  Adjusted the constraints file to map the camera’s PMOD DVP and SCCB inout nets to the correct board pins, and set IOSTANDARDs (`LVCMOS33` for camera/PMOD, `TMDS_33` for HDMI) for those signals.
+
+---
+
+## 11) PYNQ Python Software
+
+- **Overlay Loading**  
+  In a Jupyter notebook, load and download the `OV7670HW.xsa` overlay.
+
+- **Camera Initialization**  
+  Use raw I²C via `i2ctransfer -y 1 w1@0x21 reg r1@0x21` to reset and configure the OV7670’s registers at 7-bit address 0x21.
+
+- **Frame Capture**  
+  Call `ol.axi_vdma_0.readchannel.start(size)` / `.readframe()` to grab one RGB565 frame of size (width×height×2 bytes) from DDR.
+
+- **Image Decoding & Display**  
+  In Python, unpack the 16-bit RGB565 buffer into 24-bit RGB and show it with Matplotlib.
+
+## 12) Known Issues & Tips
+
+- **PS-EMIO I²C bus** appears as `/dev/i2c-1` on PYNQ-Z2, not `/dev/i2c-0`.  
+- **OV7670 SCCB** isn’t fully SMBus-compliant; use `i2ctransfer` (raw write–read) or a proper I²C library.  
+- **Pull-ups** on SCL/SDA are required—most OV7670 PMOD boards include them, but double-check your breakout.  
+- **Pixel clock domain**: all video IP (VTC, AXIS→Video, VDMA) must share the exact 25 MHz clock and reset.  
+- **Reset timing**: use the `proc_sys_reset` output that’s synchronous to the 25 MHz video clock.  
+- **AXIS interface**: Data-Width and Clock Converters must match TDATA_NUM_BYTES and FREQ_HZ of upstream/downstream IP.  
