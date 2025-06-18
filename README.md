@@ -49,7 +49,7 @@ This project demonstrates a complete FPGA-and-software flow for:
 
 ## Vivado Block Diagram
 
-> _Insert your project block diagram here. For example:_
+
 
 ![Block Diagram](docs/block_diagram.png)
 
@@ -102,14 +102,4 @@ This project demonstrates a complete FPGA-and-software flow for:
 3. Wire PS EMIO pins:
 
 
-(Similarly for SDA.)  
 
-4. In `hw/design_1_wrapper.xdc`, constrain:
-
-```tcl
-set_property PACKAGE_PIN W16 [get_ports { iic_rtl_0_scl_io }]
-set_property IOSTANDARD  LVCMOS33 [get_ports { iic_rtl_0_scl_io }]
-set_property PACKAGE_PIN V16 [get_ports { iic_rtl_0_sda_io }]
-set_property IOSTANDARD  LVCMOS33 [get_ports { iic_rtl_0_sda_io }]
-
-## PS-EMIO I²C (SCCB) Setup
