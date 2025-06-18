@@ -36,3 +36,80 @@ This project demonstrates a complete FPGA-and-software flow for:
 
 ## Repository Structure
 
+---
+
+## Hardware Requirements
+
+- **Digilent PYNQ-Z2** development board (XC7Z020-1CLG400C)  
+- **OV7670** camera module with SCCB interface  
+- **2× 1×6 PMOD connector cables** (Camera → PYNQ PMOD B)  
+- **HDMI cable & monitor** for video out  
+- **Micro-SD card** with PYNQ 3.x image  
+
+---
+
+## Vivado Block Diagram
+
+> _Insert your project block diagram here. For example:_
+
+![Block Diagram](docs/block_diagram.png)
+
+**Major IP Blocks**  
+- **Clocking Wizard**: Generates 24 MHz (camera XCLK) and 25 MHz (HDMI pixel clock)  
+- **Processing System (PS-7)**:  
+  - 7-series Zynq PS, with **I2C0 EMIO** enabled for SCCB  
+  - DDR and fixed-IO connections for PS subsystems  
+- **Utility Buffer (×2)**:  
+  - Configured as IOBUF for `SCL_O/I/T` and `SDA_O/I/T` to PMOD pins  
+- **Vivado HLS IP (`dvp2axis_0`)**: C→AXI-Stream converter for camera DVP  
+- **AXI Data-Width & Clock Converters**: Match pixel width (2 bytes) & domain (25 MHz)  
+- **Video Timing Controller (`v_tc_0`)**: Generates HSYNC/VSYNC/DE for 640×480@60 Hz  
+- **AXI4-Stream to Video Out (`v_axi4s_vid_out_0`)**: Packs AXIS into TMDS signals  
+- **AXI-VDMA (`axi_vdma_0`)**: S2MM for snapshot, MM2S for live loop (optional)  
+
+---
+
+## Clocking & Reset
+
+| Clock Source         | Used For               | Frequency  |
+|----------------------|------------------------|-----------:|
+| `sys_clk_pin` (MIO)  | PS DDR, PS Peripherals | 125 MHz    |
+| `clk_wiz_0_clk_out0` | OV7670 XCLK            | 24 MHz     |
+| `clk_wiz_0_clk_out1` | N/A                    | (unused)   |
+| `clk_wiz_0_clk_out2` | Video Timing/HDMI Out  | 25 MHz     |
+
+- **Reset**: `proc_sys_reset_0/peripheral_aresetn` synchronized to 25 MHz  
+
+---
+
+## HLS IP: `dvp2axis`
+
+- **Source**: `hls/dvp2axis.cpp`, `dvp2axis.h`  
+- **Function**:  
+  1. On each rising PCLK, sample `data_in[7:0]`, `href`, `vsync`.  
+  2. When `href` is high, pack pixel into 16-bit RGB565.  
+  3. Assert `tuser` at start of frame, `tlast` at end of line.  
+- **Interface**:  
+  - AXI4-Stream Master: `m_axis_tdata[15:0]`, `tvalid`, `tready`, `tuser`, `tlast`  
+  - Clock: PCLK domain for input → output clock converter  
+- **Co-Simulation**: `tb_dvp2axis.cpp` provides dummy DVP input to verify functionality.  
+
+---
+
+## PS-EMIO I²C (SCCB) Setup
+
+1. In the Zynq PS block, **enable EMIO** for **I2C0**.  
+2. Add two **Utility Buffer** IPs, set **C Buf Type = IOBUF**.  
+3. Wire PS EMIO pins:
+
+
+(Similarly for SDA.)  
+
+4. In `hw/design_1_wrapper.xdc`, constrain:
+
+```tcl
+set_property PACKAGE_PIN W16 [get_ports { iic_rtl_0_scl_io }]
+set_property IOSTANDARD  LVCMOS33 [get_ports { iic_rtl_0_scl_io }]
+set_property PACKAGE_PIN V16 [get_ports { iic_rtl_0_sda_io }]
+set_property IOSTANDARD  LVCMOS33 [get_ports { iic_rtl_0_sda_io }]
+
