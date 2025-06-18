@@ -51,7 +51,7 @@ This project demonstrates a complete FPGA-and-software flow for:
 
 
 
-![Block Diagram](docs/block_diagram.png)
+![Block Diagram](block_diagram.png)
 
 **Major IP Blocks**  
 - **Clocking Wizard**: Generates 24 MHz (camera XCLK) and 25 MHz (HDMI pixel clock)  
