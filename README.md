@@ -14,10 +14,9 @@
 8. [AXI-Stream → Video Out Pipeline](#axi-stream--video-out-pipeline)  
 9. [AXI-VDMA Configuration](#axi-vdma-configuration)  
 10. [Top-Level Wrapper & XDC Constraints](#top-level-wrapper--xdc-constraints)  
-11. [PYNQ Python Software](#pynq-python-software)  
-12. [Test Patterns & Debug](#test-patterns--debug)  
-13. [Known Issues & Tips](#known-issues--tips)  
-14. [License](#license)  
+11. [PYNQ Python Software](#pynq-python-software)   
+12. [Known Issues & Tips](#known-issues--tips)  
+
 
 ---
 
@@ -113,3 +112,4 @@ set_property IOSTANDARD  LVCMOS33 [get_ports { iic_rtl_0_scl_io }]
 set_property PACKAGE_PIN V16 [get_ports { iic_rtl_0_sda_io }]
 set_property IOSTANDARD  LVCMOS33 [get_ports { iic_rtl_0_sda_io }]
 
+## PS-EMIO I²C (SCCB) Setup
