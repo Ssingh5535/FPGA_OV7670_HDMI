@@ -49,7 +49,7 @@ This project demonstrates a complete FPGA-and-software flow for:
 
 
 
-![Block Diagram](block_diagram.png)
+![Block Diagram](images/block_diagram.png)
 
 **Major IP Blocks**  
 - **Clocking Wizard**: Generates 24 MHz (camera XCLK) and 25 MHz (HDMI pixel clock)  
@@ -194,7 +194,9 @@ This project demonstrates a complete FPGA-and-software flow for:
   Call `ol.axi_vdma_0.readchannel.start(size)` / `.readframe()` to grab one RGB frame of size (width×height×2 bytes) from DDR.
 
 - **Image Decoding & Display**  
-  In Python, unpack the image and display
+  In Python, unpack the image and display in a notebook cell with the filters. 
+![camera_image](images/capture.png)
+
 
 ## 12) Known Issues & Tips
 
