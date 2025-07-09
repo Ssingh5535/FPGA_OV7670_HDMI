@@ -191,10 +191,10 @@ This project demonstrates a complete FPGA-and-software flow for:
   Use raw I²C via `i2ctransfer -y 1 w1@0x21 reg r1@0x21` to reset and configure the OV7670’s registers at 7-bit address 0x21.
 
 - **Frame Capture**  
-  Call `ol.axi_vdma_0.readchannel.start(size)` / `.readframe()` to grab one RGB565 frame of size (width×height×2 bytes) from DDR.
+  Call `ol.axi_vdma_0.readchannel.start(size)` / `.readframe()` to grab one RGB frame of size (width×height×2 bytes) from DDR.
 
 - **Image Decoding & Display**  
-  In Python, unpack the 16-bit RGB565 buffer into 24-bit RGB and show it with Matplotlib.
+  In Python, unpack the image and display
 
 ## 12) Known Issues & Tips
 
